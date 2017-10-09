@@ -1,0 +1,28 @@
+yanqing:
+  collector:
+    cadviser:
+      - fetch all container in node
+    collector:
+      - collect /proc/<pid>/net/tcp and /proc/<pid>/net/udp
+    watch:
+      - refresh docker container info
+      - get container pid using docker inspect
+    storage:
+      store docker container info and metrics:
+        - pid
+        - labels
+        - tcp metrics
+        - udp metrics
+    housekeeping:
+      - remove docker container info
+  http handler:
+    prometheus handler:
+      - get metrics from collector
+    healthz handler:
+      - check health
+    api handler:
+      - version
+      - TODO
+  TODO:
+    - monitor container event
+    - api handler

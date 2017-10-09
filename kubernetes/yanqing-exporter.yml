@@ -1,0 +1,65 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: yanqing-exporter
+  name: yanqing-exporter
+  namespace: devops
+spec:
+  selector:
+    matchLabels:
+      app: yanqing-exporter
+  template:
+    metadata:
+      labels:
+        app: yanqing-exporter
+      name: yanqing-exporter
+    spec:
+      containers:
+      - name: yanqing-exporter
+        image: jojohappy/yanqing-exporter:latest
+        args:
+        - /yanqing-exporter
+        - --cadvisor_port=4194
+        - --logtostderr=true
+        ports:
+        - containerPort: 9187
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /host/proc
+          name: proc
+          readOnly: true
+        - mountPath: /var/run
+          name: docker-daemon
+        env:
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+      volumes:
+      - hostPath:
+          path: /proc
+        name: proc
+      - hostPath:
+          path: /var/run
+        name: docker-daemon
+  updateStrategy:
+    type: RollingUpdate
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: yanqing-exporter
+  name: yanqing-exporter
+  namespace: devops
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9187
+    targetPort: 9187
+    protocol: TCP
+  selector:
+    app: yanqing-exporter
