@@ -4,7 +4,6 @@ metadata:
   labels:
     app: yanqing-exporter
   name: yanqing-exporter
-  namespace: devops
 spec:
   selector:
     matchLabels:
@@ -52,7 +51,6 @@ metadata:
   labels:
     app: yanqing-exporter
   name: yanqing-exporter
-  namespace: devops
   annotations:
     prometheus.io/scrape: 'true'
 spec:
