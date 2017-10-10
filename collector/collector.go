@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	interval             = time.Second * 10
+	interval             = flag.Duration("collect_interval", time.Second*10, "Interval between collectings")
 	rootFs               = flag.String("collector_procfs", "/host/", "Path of host proc")
 	housekeepingInterval = flag.Duration("housekeeping_interval", 1*time.Minute, "Interval between housekeepings")
 )
@@ -85,7 +85,7 @@ func (c *collector) startCollector(quit chan error) {
 	var udpStat info.UdpStat
 
 	containerInfos := make(map[string]*docker.ContainerInfo)
-	ticker := time.NewTicker(interval)
+	ticker := time.NewTicker(*interval)
 	go func() {
 		for {
 			select {
