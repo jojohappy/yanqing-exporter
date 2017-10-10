@@ -39,7 +39,7 @@
 
 [[projects]]
   name = "github.com/google/cadvisor"
-  packages = ["client","info/v1"]
+  packages = ["client","info/v1","metrics"]
   revision = "cda62a43857256fbc95dd31e7c810888f00f8ec7"
   version = "v0.27.1"
 
@@ -76,6 +76,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8c58a0fccf0ecb505d8938d923205c3f1d6796ea0b4c6ecafdfd49850e968b68"
+  inputs-digest = "0693d20ecae42563792d60433b1593bae629dc6c57197ac3b3920fc93d4b788d"
   solver-name = "gps-cdcl"
   solver-version = 1
