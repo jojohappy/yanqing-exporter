@@ -22,4 +22,6 @@ type ContainerStats struct {
 	Timestamp time.Time    `json:"timestamp"`
 	Tcp       info.TcpStat `json:"tcp"`
 	Udp       info.UdpStat `json:"udp"`
+	Tcp6       info.TcpStat `json:"tcp6"`
+	Udp6       info.UdpStat `json:"udp6"`
 }

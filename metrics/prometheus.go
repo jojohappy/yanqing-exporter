@@ -154,6 +154,85 @@ func NewCollector(memoryStorage storage.Storage) *yanqingCollector {
 					}
 				},
 			},
+			{
+				name:        "yq_container_network_tcp6_usage_total",
+				help:        "tcp6 connection usage statistic for container by yanqing-exporter",
+				valueType:   prometheus.GaugeValue,
+				extraLabels: []string{"tcp6_state"},
+				getValues: func(s *docker.ContainerStats) metricValues {
+					return metricValues{
+						{
+							value:  float64(s.Tcp6.Established),
+							labels: []string{"established"},
+						},
+						{
+							value:  float64(s.Tcp6.SynSent),
+							labels: []string{"synsent"},
+						},
+						{
+							value:  float64(s.Tcp6.SynRecv),
+							labels: []string{"synrecv"},
+						},
+						{
+							value:  float64(s.Tcp6.FinWait1),
+							labels: []string{"finwait1"},
+						},
+						{
+							value:  float64(s.Tcp6.FinWait2),
+							labels: []string{"finwait2"},
+						},
+						{
+							value:  float64(s.Tcp6.TimeWait),
+							labels: []string{"timewait"},
+						},
+						{
+							value:  float64(s.Tcp6.Close),
+							labels: []string{"close"},
+						},
+						{
+							value:  float64(s.Tcp6.CloseWait),
+							labels: []string{"closewait"},
+						},
+						{
+							value:  float64(s.Tcp6.LastAck),
+							labels: []string{"lastack"},
+						},
+						{
+							value:  float64(s.Tcp6.Listen),
+							labels: []string{"listen"},
+						},
+						{
+							value:  float64(s.Tcp6.Closing),
+							labels: []string{"closing"},
+						},
+					}
+				},
+			}, {
+				name:        "yq_container_network_udp6_usage_total",
+				help:        "udp6 connection usage statistic for container by yanqing-exporter",
+				valueType:   prometheus.GaugeValue,
+				extraLabels: []string{"udp6_state"},
+				getValues: func(s *docker.ContainerStats) metricValues {
+					return metricValues{
+						{
+							value:  float64(s.Udp6.Listen),
+							labels: []string{"listen"},
+						},
+						{
+							value:  float64(s.Udp6.Dropped),
+							labels: []string{"dropped"},
+						},
+						{
+							value:  float64(s.Udp6.RxQueued),
+							labels: []string{"rxqueued"},
+						},
+						{
+							value:  float64(s.Udp6.TxQueued),
+							labels: []string{"txqueued"},
+						},
+					}
+				},
+			},
 		},
 		cacheStorage: memoryStorage,
 	}

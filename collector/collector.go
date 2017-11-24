@@ -83,6 +83,8 @@ func (c *collector) startCollector(quit chan error) {
 	var wg sync.WaitGroup
 	var tcpStat info.TcpStat
 	var udpStat info.UdpStat
+	var tcp6Stat info.TcpStat
+	var udp6Stat info.UdpStat
 
 	containerInfos := make(map[string]*docker.ContainerInfo)
 	ticker := time.NewTicker(*interval)
@@ -112,11 +114,25 @@ func (c *collector) startCollector(quit chan error) {
 							udpError = true
 						}
 
+						tcp6Stat, err = tcpStatsFromProc(*rootFs, container.Spec.Pid, "net/tcp6")
+						if err != nil {
+							glog.V(2).Infof("Unable to get tcp6 stats from pid %d: %v", container.Spec.Pid, err)
+							tcpError = true
+						}
+
+						udp6Stat, err = udpStatsFromProc(*rootFs, container.Spec.Pid, "net/udp6")
+						if err != nil {
+							glog.V(2).Infof("Unable to get udp6 stats from pid %d: %v", container.Spec.Pid, err)
+							udpError = true
+						}
+
 						if !udpError && !tcpError {
 							containerStats := &docker.ContainerStats{
 								Timestamp: time.Now(),
 								Tcp:       tcpStat,
 								Udp:       udpStat,
+								Tcp6:      tcp6Stat,
+								Udp6:      udp6Stat,
 							}
 							c.cacheStorage.AddStats(container.Name, containerStats)
 						}
