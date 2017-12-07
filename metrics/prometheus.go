@@ -232,6 +232,103 @@ func NewCollector(memoryStorage storage.Storage) *yanqingCollector {
 						},
 					}
 				},
+			}, {
+				name:        "yq_container_network_tcpext_usage_total",
+				help:        "tcpext usage statistic for container by yanqing-exporter",
+				valueType:   prometheus.GaugeValue,
+				extraLabels: []string{"tcpext_state"},
+				getValues: func(s *docker.ContainerStats) metricValues {
+					return metricValues{
+						{
+							value:  float64(s.TcpExt.PruneCalled),
+							labels: []string{"pruneCalled"},
+						},
+						{
+							value:  float64(s.TcpExt.LockDroppedIcmps),
+							labels: []string{"lockdroppedicmps"},
+						},
+						{
+							value:  float64(s.TcpExt.ArpFilter),
+							labels: []string{"arpfilter"},
+						},
+						{
+							value:  float64(s.TcpExt.TW),
+							labels: []string{"tw"},
+						},
+						{
+							value:  float64(s.TcpExt.DelayedACKLocked),
+							labels: []string{"delayedacklocked"},
+						},
+						{
+							value:  float64(s.TcpExt.ListenOverflows),
+							labels: []string{"listenoverflows"},
+						},
+						{
+							value:  float64(s.TcpExt.ListenDrops),
+							labels: []string{"listendrops"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPPrequeueDropped),
+							labels: []string{"tcpprequeuedropped"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPTSReorder),
+							labels: []string{"tcptsreorder"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPDSACKUndo),
+							labels: []string{"tcpdsackundo"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPLostRetransmit),
+							labels: []string{"tcplostretransmit"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPLossFailures),
+							labels: []string{"tcplossfailures"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPFastRetrans),
+							labels: []string{"tcpfastretrans"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPTimeouts),
+							labels: []string{"tcptimeouts"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPSchedulerFailed),
+							labels: []string{"tcpschedulerfailed"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPAbortOnMemory),
+							labels: []string{"tcpabortonmemory"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPAbortOnTimeout),
+							labels: []string{"tcpabortontimeout"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPAbortFailed),
+							labels: []string{"tcpabortfailed"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPMemoryPressures),
+							labels: []string{"tcpmemorypressures"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPSpuriousRTOs),
+							labels: []string{"tcpspuriousrtos"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPBacklogDrop),
+							labels: []string{"tcpbacklogdrop"},
+						},
+						{
+							value:  float64(s.TcpExt.TCPMinTTLDrop),
+							labels: []string{"tcpminttldrop"},
+						},
+					}
+				},
 			},
 		},
 		cacheStorage: memoryStorage,

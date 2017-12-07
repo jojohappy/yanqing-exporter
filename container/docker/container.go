@@ -4,6 +4,8 @@ import (
 	"time"
 
 	info "github.com/google/cadvisor/info/v1"
+
+	"github.com/yanqing-exporter/collector/types"
 )
 
 type ContainerInfo struct {
@@ -19,9 +21,10 @@ type ContainerSpec struct {
 }
 
 type ContainerStats struct {
-	Timestamp time.Time    `json:"timestamp"`
-	Tcp       info.TcpStat `json:"tcp"`
-	Udp       info.UdpStat `json:"udp"`
-	Tcp6       info.TcpStat `json:"tcp6"`
-	Udp6       info.UdpStat `json:"udp6"`
+	Timestamp time.Time        `json:"timestamp"`
+	Tcp       info.TcpStat     `json:"tcp"`
+	Udp       info.UdpStat     `json:"udp"`
+	Tcp6      info.TcpStat     `json:"tcp6"`
+	Udp6      info.UdpStat     `json:"udp6"`
+	TcpExt    types.TcpExtStat `json:"tcpext"`
 }

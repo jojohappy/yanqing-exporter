@@ -2,6 +2,7 @@ package collector
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	info "github.com/google/cadvisor/info/v1"
 
 	"github.com/yanqing-exporter/collector/cadvisor"
+	"github.com/yanqing-exporter/collector/types"
 	"github.com/yanqing-exporter/collector/watcher"
 	"github.com/yanqing-exporter/container/docker"
 	"github.com/yanqing-exporter/storage"
@@ -85,6 +87,7 @@ func (c *collector) startCollector(quit chan error) {
 	var udpStat info.UdpStat
 	var tcp6Stat info.TcpStat
 	var udp6Stat info.UdpStat
+	var tcpExtStat types.TcpExtStat
 
 	containerInfos := make(map[string]*docker.ContainerInfo)
 	ticker := time.NewTicker(*interval)
@@ -102,6 +105,7 @@ func (c *collector) startCollector(quit chan error) {
 						defer wg.Done()
 						var tcpError = false
 						var udpError = false
+						var tcpExtError = false
 						tcpStat, err = tcpStatsFromProc(*rootFs, container.Spec.Pid, "net/tcp")
 						if err != nil {
 							glog.V(2).Infof("Unable to get tcp stats from pid %d: %v", container.Spec.Pid, err)
@@ -126,13 +130,20 @@ func (c *collector) startCollector(quit chan error) {
 							udpError = true
 						}
 
-						if !udpError && !tcpError {
+						tcpExtStat, err = scanTcpExtStats(*rootFs, container.Spec.Pid, "net/netstat")
+						if err != nil {
+							glog.V(2).Infof("Unable to get tcpext stats from pid %d: %v", container.Spec.Pid, err)
+							tcpExtError = true
+						}
+
+						if !udpError && !tcpError && !tcpExtError {
 							containerStats := &docker.ContainerStats{
 								Timestamp: time.Now(),
 								Tcp:       tcpStat,
 								Udp:       udpStat,
 								Tcp6:      tcp6Stat,
 								Udp6:      udp6Stat,
+								TcpExt:    tcpExtStat,
 							}
 							c.cacheStorage.AddStats(container.Name, containerStats)
 						}
@@ -313,4 +324,115 @@ func scanUdpStats(r io.Reader) (info.UdpStat, error) {
 	}
 
 	return stats, nil
+}
+
+func scanTcpExtStats(rootFs string, pid int, file string) (types.TcpExtStat, error) {
+	var stats types.TcpExtStat
+
+	ret := map[string]uint64{
+		"PruneCalled":        0,
+		"LockDroppedIcmps":   0,
+		"ArpFilter":          0,
+		"TW":                 0,
+		"DelayedACKLocked":   0,
+		"ListenOverflows":    0,
+		"ListenDrops":        0,
+		"TCPPrequeueDropped": 0,
+		"TCPTSReorder":       0,
+		"TCPDSACKUndo":       0,
+		"TCPLostRetransmit":  0,
+		"TCPLossFailures":    0,
+		"TCPFastRetrans":     0,
+		"TCPTimeouts":        0,
+		"TCPSchedulerFailed": 0,
+		"TCPAbortOnMemory":   0,
+		"TCPAbortOnTimeout":  0,
+		"TCPAbortFailed":     0,
+		"TCPMemoryPressures": 0,
+		"TCPSpuriousRTOs":    0,
+		"TCPBacklogDrop":     0,
+		"TCPMinTTLDrop":      0,
+	}
+	var contents []byte
+	tcpExtStatFile := path.Join(rootFs, "proc", strconv.Itoa(pid), file)
+	contents, err := ioutil.ReadFile(tcpExtStatFile)
+	if err != nil {
+		return stats, err
+	}
+
+	reader := bufio.NewReader(bytes.NewBuffer(contents))
+	for {
+		var bs []byte
+		bs, err = readLine(reader)
+		if err == io.EOF {
+			err = nil
+			break
+		} else if err != nil {
+			return stats, err
+		}
+
+		line := string(bs)
+		idx := strings.Index(line, ":")
+		if idx < 0 {
+			continue
+		}
+
+		title := strings.TrimSpace(line[:idx])
+		if title == "TcpExt" {
+			ths := strings.Fields(strings.TrimSpace(line[idx+1:]))
+			bs, err = readLine(reader)
+			if err != nil {
+				return stats, err
+			}
+
+			valLine := string(bs)
+			tds := strings.Fields(strings.TrimSpace(valLine[idx+1:]))
+			for i := 0; i < len(ths); i++ {
+				ret[ths[i]], err = strconv.ParseUint(tds[i], 10, 64)
+				if err != nil {
+					return stats, err
+				}
+			}
+		}
+		if len(ret) == 0 {
+			return stats, fmt.Errorf("failure fetching tcpext stats")
+		}
+		stats = types.TcpExtStat{
+			PruneCalled:        ret["PruneCalled"],
+			LockDroppedIcmps:   ret["LockDroppedIcmps"],
+			ArpFilter:          ret["ArpFilter"],
+			TW:                 ret["TW"],
+			DelayedACKLocked:   ret["DelayedACKLocked"],
+			ListenOverflows:    ret["ListenOverflows"],
+			ListenDrops:        ret["ListenDrops"],
+			TCPPrequeueDropped: ret["TCPPrequeueDropped"],
+			TCPTSReorder:       ret["TCPTSReorder"],
+			TCPDSACKUndo:       ret["TCPDSACKUndo"],
+			TCPLostRetransmit:  ret["TCPLostRetransmit"],
+			TCPLossFailures:    ret["TCPLossFailures"],
+			TCPFastRetrans:     ret["TCPFastRetrans"],
+			TCPTimeouts:        ret["TCPTimeouts"],
+			TCPSchedulerFailed: ret["TCPSchedulerFailed"],
+			TCPAbortOnMemory:   ret["TCPAbortOnMemory"],
+			TCPAbortOnTimeout:  ret["TCPAbortOnTimeout"],
+			TCPAbortFailed:     ret["TCPAbortFailed"],
+			TCPMemoryPressures: ret["TCPMemoryPressures"],
+			TCPSpuriousRTOs:    ret["TCPSpuriousRTOs"],
+			TCPBacklogDrop:     ret["TCPBacklogDrop"],
+			TCPMinTTLDrop:      ret["TCPMinTTLDrop"],
+		}
+		return stats, nil
+	}
+	return stats, nil
+}
+
+func readLine(r *bufio.Reader) ([]byte, error) {
+	line, isPrefix, err := r.ReadLine()
+	for isPrefix && err == nil {
+		var bs []byte
+		bs, isPrefix, err = r.ReadLine()
+		line = append(line, bs...)
+	}
+
+	return line, err
 }
