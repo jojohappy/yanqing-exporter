@@ -1,5 +1,9 @@
 package types
 
+import (
+	info "github.com/google/cadvisor/info/v1"
+)
+
 type TcpExtStat struct {
 	PruneCalled        uint64
 	LockDroppedIcmps   uint64
@@ -23,4 +27,8 @@ type TcpExtStat struct {
 	TCPSpuriousRTOs    uint64
 	TCPBacklogDrop     uint64
 	TCPMinTTLDrop      uint64
+}
+
+type TcpStatWithPort struct {
+	Stats map[int64]info.TcpStat
 }

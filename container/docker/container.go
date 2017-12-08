@@ -21,10 +21,12 @@ type ContainerSpec struct {
 }
 
 type ContainerStats struct {
-	Timestamp time.Time        `json:"timestamp"`
-	Tcp       info.TcpStat     `json:"tcp"`
-	Udp       info.UdpStat     `json:"udp"`
-	Tcp6      info.TcpStat     `json:"tcp6"`
-	Udp6      info.UdpStat     `json:"udp6"`
-	TcpExt    types.TcpExtStat `json:"tcpext"`
+	Timestamp    time.Time             `json:"timestamp"`
+	Tcp          info.TcpStat          `json:"tcp"`
+	Udp          info.UdpStat          `json:"udp"`
+	Tcp6         info.TcpStat          `json:"tcp6"`
+	Udp6         info.UdpStat          `json:"udp6"`
+	TcpExt       types.TcpExtStat      `json:"tcpext"`
+	TcpWithPort  types.TcpStatWithPort `json:"tcpwithport"`
+	Tcp6WithPort types.TcpStatWithPort `json:"tcp6withport"`
 }

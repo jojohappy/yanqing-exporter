@@ -88,6 +88,8 @@ func (c *collector) startCollector(quit chan error) {
 	var tcp6Stat info.TcpStat
 	var udp6Stat info.UdpStat
 	var tcpExtStat types.TcpExtStat
+	var tcpStatPort types.TcpStatWithPort
+	var tcp6StatPort types.TcpStatWithPort
 
 	containerInfos := make(map[string]*docker.ContainerInfo)
 	ticker := time.NewTicker(*interval)
@@ -106,7 +108,7 @@ func (c *collector) startCollector(quit chan error) {
 						var tcpError = false
 						var udpError = false
 						var tcpExtError = false
-						tcpStat, err = tcpStatsFromProc(*rootFs, container.Spec.Pid, "net/tcp")
+						tcpStat, tcpStatPort, err = tcpStatsFromProc(*rootFs, container.Spec.Pid, "net/tcp")
 						if err != nil {
 							glog.V(2).Infof("Unable to get tcp stats from pid %d: %v", container.Spec.Pid, err)
 							tcpError = true
@@ -118,7 +120,7 @@ func (c *collector) startCollector(quit chan error) {
 							udpError = true
 						}
 
-						tcp6Stat, err = tcpStatsFromProc(*rootFs, container.Spec.Pid, "net/tcp6")
+						tcp6Stat, tcp6StatPort, err = tcpStatsFromProc(*rootFs, container.Spec.Pid, "net/tcp6")
 						if err != nil {
 							glog.V(2).Infof("Unable to get tcp6 stats from pid %d: %v", container.Spec.Pid, err)
 							tcpError = true
@@ -138,12 +140,14 @@ func (c *collector) startCollector(quit chan error) {
 
 						if !udpError && !tcpError && !tcpExtError {
 							containerStats := &docker.ContainerStats{
-								Timestamp: time.Now(),
-								Tcp:       tcpStat,
-								Udp:       udpStat,
-								Tcp6:      tcp6Stat,
-								Udp6:      udp6Stat,
-								TcpExt:    tcpExtStat,
+								Timestamp:    time.Now(),
+								Tcp:          tcpStat,
+								Udp:          udpStat,
+								Tcp6:         tcp6Stat,
+								Udp6:         udp6Stat,
+								TcpExt:       tcpExtStat,
+								TcpWithPort:  tcpStatPort,
+								Tcp6WithPort: tcp6StatPort,
 							}
 							c.cacheStorage.AddStats(container.Name, containerStats)
 						}
@@ -189,23 +193,24 @@ func (c *collector) housekeeping(quit chan error) {
 	}
 }
 
-func tcpStatsFromProc(rootFs string, pid int, file string) (info.TcpStat, error) {
+func tcpStatsFromProc(rootFs string, pid int, file string) (info.TcpStat, types.TcpStatWithPort, error) {
 	tcpStatsFile := path.Join(rootFs, "proc", strconv.Itoa(pid), file)
 
-	tcpStats, err := scanTcpStats(tcpStatsFile)
+	tcpStats, tcpStatsPort, err := scanTcpStats(tcpStatsFile)
 	if err != nil {
-		return tcpStats, fmt.Errorf("couldn't read tcp stats: %v", err)
+		return tcpStats, tcpStatsPort, fmt.Errorf("couldn't read tcp stats: %v", err)
 	}
 
-	return tcpStats, nil
+	return tcpStats, tcpStatsPort, nil
 }
 
-func scanTcpStats(tcpStatsFile string) (info.TcpStat, error) {
+func scanTcpStats(tcpStatsFile string) (info.TcpStat, types.TcpStatWithPort, error) {
 	var stats info.TcpStat
+	var statsPort types.TcpStatWithPort
 
 	data, err := ioutil.ReadFile(tcpStatsFile)
 	if err != nil {
-		return stats, fmt.Errorf("failure opening %s: %v", tcpStatsFile, err)
+		return stats, statsPort, fmt.Errorf("failure opening %s: %v", tcpStatsFile, err)
 	}
 
 	tcpStateMap := map[string]uint64{
@@ -222,13 +227,15 @@ func scanTcpStats(tcpStatsFile string) (info.TcpStat, error) {
 		"0B": 0, //CLOSING
 	}
 
+	tcpStatPortMap := map[int64]map[string]uint64{}
+
 	reader := strings.NewReader(string(data))
 	scanner := bufio.NewScanner(reader)
 
 	scanner.Split(bufio.ScanLines)
 
 	if b := scanner.Scan(); !b {
-		return stats, scanner.Err()
+		return stats, statsPort, scanner.Err()
 	}
 
 	for scanner.Scan() {
@@ -238,9 +245,36 @@ func scanTcpStats(tcpStatsFile string) (info.TcpStat, error) {
 		tcpState := state[3]
 		_, ok := tcpStateMap[tcpState]
 		if !ok {
-			return stats, fmt.Errorf("invalid TCP stats line: %v", line)
+			return stats, statsPort, fmt.Errorf("invalid TCP stats line: %v", line)
 		}
 		tcpStateMap[tcpState]++
+
+		localAddress := strings.Split(state[1], ":")
+		localPort, err := strconv.ParseInt(localAddress[1], 16, 32)
+		if err != nil {
+			return stats, statsPort, err
+		}
+		_, ok = tcpStatPortMap[localPort]
+		if !ok {
+			tcpStatPortMap[localPort] = map[string]uint64{
+				"01": 0, //ESTABLISHED
+				"02": 0, //SYN_SENT
+				"03": 0, //SYN_RECV
+				"04": 0, //FIN_WAIT1
+				"05": 0, //FIN_WAIT2
+				"06": 0, //TIME_WAIT
+				"07": 0, //CLOSE
+				"08": 0, //CLOSE_WAIT
+				"09": 0, //LAST_ACK
+				"0A": 0, //LISTEN
+				"0B": 0, //CLOSING
+			}
+		}
+		_, ok = tcpStatPortMap[localPort][tcpState]
+		if !ok {
+			return stats, statsPort, fmt.Errorf("invalid TCP stats line: %v", line)
+		}
+		tcpStatPortMap[localPort][tcpState]++
 	}
 
 	stats = info.TcpStat{
@@ -257,7 +291,24 @@ func scanTcpStats(tcpStatsFile string) (info.TcpStat, error) {
 		Closing:     tcpStateMap["0B"],
 	}
 
-	return stats, nil
+	tcpStatPortReault := make(map[int64]info.TcpStat, len(tcpStatPortMap))
+	for port, ss := range tcpStatPortMap {
+		tcpStatPortReault[port] = info.TcpStat{
+			Established: ss["01"],
+			SynSent:     ss["02"],
+			SynRecv:     ss["03"],
+			FinWait1:    ss["04"],
+			FinWait2:    ss["05"],
+			TimeWait:    ss["06"],
+			Close:       ss["07"],
+			CloseWait:   ss["08"],
+			LastAck:     ss["09"],
+			Listen:      ss["0A"],
+			Closing:     ss["0B"],
+		}
+	}
+	statsPort = types.TcpStatWithPort{Stats: tcpStatPortReault}
+	return stats, statsPort, nil
 }
 
 func udpStatsFromProc(rootFs string, pid int, file string) (info.UdpStat, error) {

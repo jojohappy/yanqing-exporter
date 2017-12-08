@@ -330,6 +330,117 @@ func NewCollector(memoryStorage storage.Storage) *yanqingCollector {
 					}
 				},
 			},
+			{
+				name:        "yq_container_network_tcp_port_usage_total",
+				help:        "tcp connection usage statistic with port for container by yanqing-exporter",
+				valueType:   prometheus.GaugeValue,
+				extraLabels: []string{"tcp_state", "local_port"},
+				getValues: func(s *docker.ContainerStats) metricValues {
+					values := make(metricValues, 0, len(s.TcpWithPort.Stats))
+					for port, stats := range s.TcpWithPort.Stats {
+						values = append(values, metricValue{
+							value:  float64(stats.Established),
+							labels: []string{"established", string(port)},
+						},
+							metricValue{
+								value:  float64(stats.SynSent),
+								labels: []string{"synsent", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.SynRecv),
+								labels: []string{"synrecv", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.FinWait1),
+								labels: []string{"finwait1", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.FinWait2),
+								labels: []string{"finwait2", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.TimeWait),
+								labels: []string{"timewait", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.Close),
+								labels: []string{"close", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.CloseWait),
+								labels: []string{"closewait", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.LastAck),
+								labels: []string{"lastack", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.Listen),
+								labels: []string{"listen", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.Closing),
+								labels: []string{"closing", string(port)},
+							})
+					}
+					return values
+				},
+			}, {
+				name:        "yq_container_network_tcp6_port_usage_total",
+				help:        "tcp6 connection usage statistic with port for container by yanqing-exporter",
+				valueType:   prometheus.GaugeValue,
+				extraLabels: []string{"tcp6_state", "local_port"},
+				getValues: func(s *docker.ContainerStats) metricValues {
+					values := make(metricValues, 0, len(s.Tcp6WithPort.Stats))
+					for port, stats := range s.Tcp6WithPort.Stats {
+						values = append(values, metricValue{
+							value:  float64(stats.Established),
+							labels: []string{"established", string(port)},
+						},
+							metricValue{
+								value:  float64(stats.SynSent),
+								labels: []string{"synsent", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.SynRecv),
+								labels: []string{"synrecv", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.FinWait1),
+								labels: []string{"finwait1", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.FinWait2),
+								labels: []string{"finwait2", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.TimeWait),
+								labels: []string{"timewait", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.Close),
+								labels: []string{"close", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.CloseWait),
+								labels: []string{"closewait", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.LastAck),
+								labels: []string{"lastack", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.Listen),
+								labels: []string{"listen", string(port)},
+							},
+							metricValue{
+								value:  float64(stats.Closing),
+								labels: []string{"closing", string(port)},
+							})
+					}
+					return values
+				},
+			},
 		},
 		cacheStorage: memoryStorage,
 	}
