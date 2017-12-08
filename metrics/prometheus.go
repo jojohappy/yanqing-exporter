@@ -341,47 +341,47 @@ func NewCollector(memoryStorage storage.Storage) *yanqingCollector {
 					for port, stats := range s.TcpWithPort.Stats {
 						values = append(values, metricValue{
 							value:  float64(stats.Established),
-							labels: []string{"established", string(port)},
+							labels: []string{"established", strconv.FormatInt(port, 10)},
 						},
 							metricValue{
 								value:  float64(stats.SynSent),
-								labels: []string{"synsent", string(port)},
+								labels: []string{"synsent", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.SynRecv),
-								labels: []string{"synrecv", string(port)},
+								labels: []string{"synrecv", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.FinWait1),
-								labels: []string{"finwait1", string(port)},
+								labels: []string{"finwait1", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.FinWait2),
-								labels: []string{"finwait2", string(port)},
+								labels: []string{"finwait2", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.TimeWait),
-								labels: []string{"timewait", string(port)},
+								labels: []string{"timewait", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.Close),
-								labels: []string{"close", string(port)},
+								labels: []string{"close", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.CloseWait),
-								labels: []string{"closewait", string(port)},
+								labels: []string{"closewait", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.LastAck),
-								labels: []string{"lastack", string(port)},
+								labels: []string{"lastack", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.Listen),
-								labels: []string{"listen", string(port)},
+								labels: []string{"listen", strconv.FormatInt(port, 10)},
 							},
 							metricValue{
 								value:  float64(stats.Closing),
-								labels: []string{"closing", string(port)},
+								labels: []string{"closing", strconv.FormatInt(port, 10)},
 							})
 					}
 					return values
