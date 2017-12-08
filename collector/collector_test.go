@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"testing"
 )
 
@@ -89,4 +90,9 @@ func TestTcpStatCollect(t *testing.T) {
 	tcpStat, tcpStatPort, err := tcpStatsFromProc(yqStatDir, 1, "net/tcp")
 	fmt.Println(tcpStat)
 	fmt.Println(tcpStatPort)
+
+	for port, stats := range tcpStatPort.Stats {
+		fmt.Println(strconv.FormatInt(port, 10))
+		fmt.Println(stats.Established)
+	}
 }
